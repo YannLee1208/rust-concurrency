@@ -9,6 +9,22 @@ pub struct Matrix<T> {
     col: usize,
 }
 
+fn dot_product<T>(a: Vec<T>, b: Vec<T>) -> Result<T>
+where
+    T: Default + Add<Output = T> + Mul<Output = T> + AddAssign + Copy,
+{
+    if a.len() != b.len() {
+        return Err(anyhow!("a.len must equal to b.len"));
+    }
+
+    let mut sum = T::default();
+    for i in 0..a.len() {
+        sum += a[i] * b[i];
+    }
+
+    Ok(sum)
+}
+
 #[allow(dead_code)]
 pub fn multiply<T>(a: &Matrix<T>, b: &Matrix<T>) -> Result<Matrix<T>>
 where
@@ -21,9 +37,10 @@ where
     let mut data = vec![T::default(); a.row * b.col];
     for i in 0..a.row {
         for j in 0..b.col {
-            for k in 0..a.col {
-                data[i * b.col + j] += a.data[i * a.col + k] * b.data[k * b.row + j];
-            }
+            data[i * b.col + j] = dot_product(
+                a.data[i * a.col..(i + 1) * a.col].to_vec(),
+                b.data[j..].iter().step_by(b.col).cloned().collect(),
+            )?;
         }
     }
 
@@ -106,5 +123,13 @@ mod tests {
     fn test_matrix_debug() {
         let a = Matrix::new([1, 2, 3, 4], 2, 2);
         assert_eq!(format!("{:?}", a), "Matrix(row=2, col=2, data={1 2,3 4})");
+    }
+
+    #[test]
+    fn test_dot_product() -> Result<()> {
+        let a = vec![1, 2, 3];
+        let b = vec![4, 5, 6];
+        assert_eq!(dot_product(a, b)?, 32);
+        Ok(())
     }
 }
