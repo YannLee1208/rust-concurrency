@@ -151,6 +151,24 @@ where
     })
 }
 
+impl<T> Mul for Matrix<T>
+where
+    T: std::fmt::Debug
+        + Add<Output = T>
+        + Mul<Output = T>
+        + AddAssign
+        + Copy
+        + Default
+        + Send
+        + 'static,
+{
+    type Output = Result<Matrix<T>>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        multiply_concurrency(&self, &rhs)
+    }
+}
+
 impl<T: std::fmt::Debug> Matrix<T> {
     #[allow(dead_code)]
     // any data type which can by convert to vec
@@ -259,5 +277,13 @@ mod tests {
         let duration = start.elapsed();
         eprintln!("multiply_concurrency: {:?}", duration);
         Ok(())
+    }
+
+    #[test]
+    fn test_matrix_mul() {
+        let a = Matrix::new([1, 2, 3, 4], 2, 2);
+        let b = Matrix::new([1, 2, 3, 4], 2, 2);
+        let c = a * b;
+        assert_eq!(c.unwrap().data, vec![7, 10, 15, 22]);
     }
 }
